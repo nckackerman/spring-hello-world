@@ -8,7 +8,7 @@ public class HelloController {
 
     @RequestMapping("/")
     public String index() {
-        return "StreamerContracts test Endpoint. Test for continuous deployment";
+        return "StreamerContracts test Endpoint. Test for continuous deployment - v2";
     }
 
 }
