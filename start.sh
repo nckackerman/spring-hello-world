@@ -4,5 +4,5 @@
 killall -9 java
 
 echo "Starting StreamerContracts SpringBoot Application"
-java -jar /var/www/streamercontracts/build/libs/springhelloworld-1.0-SNAPSHOT.jar &
+java -jar /var/www/streamercontracts/build/libs/springhelloworld-1.0-SNAPSHOT.jar > /dev/null 2>&1 &
 exit $?
