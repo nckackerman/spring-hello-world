@@ -1,0 +1,232 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Infrstructure for StreamerContracts App
+Parameters:
+  GitHubRepoOwner:
+    Type: String
+    Description: ex - nckackerman
+    Default: nckackerman
+  GitHubRepoName:
+    Type: String
+    Description: ex - spring-hello-world
+    Default: spring-hello-world
+  GitHubRepoBranch:
+    Type: String
+    Description: ex - master
+    Default: master
+  GitHubRepoOAuthToken:
+    Type: String
+    Description: Generate a github personal access token (with least required privlidges) and paste its value in here. See - https://github.com/settings/tokens
+    Default: 8445f5a33a46efcda215abf3205221eef87ae59c
+  CodePipelineArtifactsBucket:
+    Type: String
+    Description: S3 bucket where codepipeline artifacts are stored. Must be lower case and unique across all S3 buckets.
+    Default: codepipeline-artifacts-bucket-streamer-contracts
+  StreamerContractsCodeBuildProject:
+    Type: String
+    Description: This should live in the template. not as an input param.
+    Default: StreamerContractsBuild-cf
+  StreamerContractsCodeDeployApplicationName:
+    Type: String
+    Description: This should live in the template. not as an input param.
+    Default: StreamerContracts
+  StreamerContractsCodeDeployDeploymentGroupName:
+    Type: String
+    Description: This should live in the template. not as an input param.
+    Default: StreamerContractsFleet
+  CodePipelineServiceRoleName:
+    Type: String
+    Description: Name for CodePipelineServiceRole and Policy
+    Default: CodePipelineServiceRole
+  CodeBuildServiceRoleName:
+    Type: String
+    Description: Name for CodeBuildServiceRole and Policy
+    Default: CodeBuildServiceRole
+
+Resources:
+  CodePipelineServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+            Effect: Allow
+            Principal:
+              Service: codepipeline.amazonaws.com
+            Action: sts:AssumeRole
+      RoleName: !Ref CodePipelineServiceRoleName
+      Policies:
+        - PolicyName: !Ref CodePipelineServiceRoleName
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+            - Action:
+              - s3:PutObject
+              Resource: arn:aws:s3:::codepipeline*
+              Effect: Allow
+            - Action:
+              - s3:GetObject
+              - s3:GetObjectVersion
+              - s3:GetBucketVersioning
+              - codecommit:CancelUploadArchive
+              - codecommit:GetBranch
+              - codecommit:GetCommit
+              - codecommit:GetUploadArchiveStatus
+              - codecommit:UploadArchive
+              - codedeploy:CreateDeployment
+              - codedeploy:GetApplicationRevision
+              - codedeploy:GetDeployment
+              - codedeploy:GetDeploymentConfig
+              - codedeploy:RegisterApplicationRevision
+              - codebuild:BatchGetBuilds
+              - codebuild:StartBuild
+              - ec2:*
+              - elasticloadbalancing:*
+              - autoscaling:*
+              - cloudwatch:*
+              - s3:*
+              - sns:*
+              - cloudformation:*
+              - rds:*
+              - sqs:*
+              - ecs:*
+              - iam:PassRole
+              Resource: "*"
+              Effect: Allow
+
+  CodeBuildServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+            Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: sts:AssumeRole
+      RoleName: !Ref CodeBuildServiceRoleName
+      Policies:
+        - PolicyName: !Ref CodeBuildServiceRoleName
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+            - Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              Resource:
+                - !Sub arn:aws:logs:us-east-1:245271560881:log-group:/aws/codebuild/${StreamerContractsCodeBuildProject}
+                - !Sub arn:aws:logs:us-east-1:245271560881:log-group:/aws/codebuild/${StreamerContractsCodeBuildProject}:*
+              Effect: Allow
+            - Action:
+              - s3:PutObject
+              - s3:GetObject
+              - s3:GetObjectVersion
+              Resource: "*"
+              Effect: Allow
+            - Action:
+              - ssm:GetParameters
+              Resource: arn:aws:ssm:us-east-1:245271560881:parameter/CodeBuild/*
+              Effect: Allow
+
+  ArtifactStoreS3Location:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: Private
+      BucketName: !Ref CodePipelineArtifactsBucket
+      LifecycleConfiguration:
+        Rules:
+          - ExpirationInDays: 1
+            Status: Enabled
+      VersioningConfiguration:
+        Status: Enabled
+
+  StreamerContractsCodeBuild:
+    Type: AWS::CodeBuild::Project
+    DependsOn: CodeBuildServiceRole
+    Properties:
+      Artifacts:
+        Type: CODEPIPELINE
+      Description: StreamerContracts CodeBuild
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/java:openjdk-8
+        Type: LINUX_CONTAINER
+      Name: StreamerContractsBuild-cf
+      ServiceRole: arn:aws:iam::245271560881:role/CodeBuildServiceRole
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: infrastructure/build_spec.yml
+      TimeoutInMinutes: 10
+
+  StreamerContractsCodePipeline:
+    Type: AWS::CodePipeline::Pipeline
+    DependsOn:
+      - CodePipelineServiceRole
+      - StreamerContractsCodeBuild
+    Properties:
+      ArtifactStore:
+        Type: S3
+        Location: !Ref CodePipelineArtifactsBucket
+      DisableInboundStageTransitions:
+        - StageName: Prod
+          Reason: Transitions to PROD must be manually triggered
+      Name: StreamerContractsPipeline-CF
+      RoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/${CodePipelineServiceRoleName}
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: SourceAction
+              RunOrder: 1
+              ActionTypeId:
+                Category: Source
+                Provider: GitHub
+                Owner: ThirdParty
+                Version: 1
+              Configuration:
+                Owner: !Ref GitHubRepoOwner
+                Repo: !Ref GitHubRepoName
+                Branch: !Ref GitHubRepoBranch
+                OAuthToken: !Ref GitHubRepoOAuthToken
+              OutputArtifacts:
+                - Name: SourceOutput
+        - Name: Build
+          Actions:
+            - Name: BuildAction
+              RunOrder: 2
+              InputArtifacts:
+                - Name: SourceOutput
+              ActionTypeId:
+                Category: Build
+                Provider: CodeBuild
+                Owner: AWS
+                Version: 1
+              Configuration:
+                ProjectName: !Ref StreamerContractsCodeBuildProject
+              OutputArtifacts:
+                - Name: BuildOutput
+        - Name: Beta
+          Actions:
+            - Name: BetaDeployAction
+              RunOrder: 3
+              InputArtifacts:
+                - Name: BuildOutput
+              ActionTypeId:
+                Category: Deploy
+                Provider: CodeDeploy
+                Owner: AWS
+                Version: 1
+              Configuration:
+                ApplicationName: !Ref StreamerContractsCodeDeployApplicationName
+                DeploymentGroupName: !Ref StreamerContractsCodeDeployDeploymentGroupName
+        - Name: Prod
+          Actions:
+            - Name: ProdDeployAction
+              RunOrder: 4
+              InputArtifacts:
+                - Name: BuildOutput
+              ActionTypeId:
+                Category: Deploy
+                Provider: CodeDeploy
+                Owner: AWS
+                Version: 1
+              Configuration:
+                ApplicationName: !Ref StreamerContractsCodeDeployApplicationName
+                DeploymentGroupName: !Ref StreamerContractsCodeDeployDeploymentGroupName
