@@ -16,15 +16,15 @@ Parameters:
   GitHubRepoOAuthToken:
     Type: String
     Description: Generate a github personal access token (with least required privlidges) and paste its value in here. See - https://github.com/settings/tokens
-    Default: 8445f5a33a46efcda215abf3205221eef87ae59c
+    Default: 6e6a285c2ea3f100a0679501fd512137e378bb28
   CodePipelineArtifactsBucket:
     Type: String
     Description: S3 bucket where codepipeline artifacts are stored. Must be lower case and unique across all S3 buckets.
     Default: codepipeline-artifacts-bucket-streamer-contracts
   StreamerContractsCodeBuildProject:
     Type: String
-    Description: This should live in the template. not as an input param.
-    Default: StreamerContractsBuild-cf
+    Description: Name for StreamerContracts CodeBuild Project
+    Default: StreamerContractsCodeBuild
   StreamerContractsCodeDeployApplicationName:
     Type: String
     Description: This should live in the template. not as an input param.
