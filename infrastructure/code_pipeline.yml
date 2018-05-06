@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Infrstructure for StreamerContracts App
+Description: Infarstructure for StreamerContracts App
 Parameters:
   GitHubRepoOwner:
     Type: String
@@ -16,33 +16,185 @@ Parameters:
   GitHubRepoOAuthToken:
     Type: String
     Description: Generate a github personal access token (with least required privlidges) and paste its value in here. See - https://github.com/settings/tokens
-    Default: 6e6a285c2ea3f100a0679501fd512137e378bb28
-  CodePipelineArtifactsBucket:
-    Type: String
-    Description: S3 bucket where codepipeline artifacts are stored. Must be lower case and unique across all S3 buckets.
-    Default: codepipeline-artifacts-bucket-streamer-contracts
-  StreamerContractsCodeBuildProject:
-    Type: String
-    Description: Name for StreamerContracts CodeBuild Project
-    Default: StreamerContractsCodeBuild
-  StreamerContractsCodeDeployApplicationName:
-    Type: String
-    Description: This should live in the template. not as an input param.
-    Default: StreamerContracts
-  StreamerContractsCodeDeployDeploymentGroupName:
-    Type: String
-    Description: This should live in the template. not as an input param.
-    Default: StreamerContractsFleet
   CodePipelineServiceRoleName:
     Type: String
     Description: Name for CodePipelineServiceRole and Policy
     Default: CodePipelineServiceRole
+  CodePipelineArtifactsBucket:
+    Type: String
+    Description: S3 bucket where codepipeline artifacts are stored. Must be lower case and unique across all S3 buckets.
+    Default: codepipeline-artifacts-bucket-streamer-contracts
   CodeBuildServiceRoleName:
     Type: String
     Description: Name for CodeBuildServiceRole and Policy
     Default: CodeBuildServiceRole
+  StreamerContractsCodeBuildProject:
+    Type: String
+    Description: Name for StreamerContracts CodeBuild Project
+    Default: StreamerContractsCodeBuild-cf
+  CodeDeployServiceRoleName:
+    Type: String
+    Description: Name for CodeDeployServiceRole and Policy
+    Default: CodeDeployServiceRole-cf
+  StreamerContractsCodeDeployApplicationName:
+    Type: String
+    Description: Name for StreamerContracts CodeDeploy Application
+    Default: StreamerContractsCodeDeploy
+  StreamerContractsCodeDeployDeploymentGroupName:
+    Type: String
+    Description: Name for StreamerContracts CodeDeploy Deployment Group
+    Default: StreamerContractsFleet-cf
+  StreamerContractsEc2InstanceTags:
+    Type: String
+    Description: The EC2 tags that are already applied to EC2 instances that you want to include in the deployment group.
+    Default: StreamerContracts-cf
 
 Resources:
+  CodeBuildServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+            Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: sts:AssumeRole
+      RoleName: !Ref CodeBuildServiceRoleName
+      Policies:
+        - PolicyName: !Ref CodeBuildServiceRoleName
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+            - Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              Resource:
+                - !Sub arn:aws:logs:us-east-1:245271560881:log-group:/aws/codebuild/${StreamerContractsCodeBuildProject}
+                - !Sub arn:aws:logs:us-east-1:245271560881:log-group:/aws/codebuild/${StreamerContractsCodeBuildProject}:*
+              Effect: Allow
+            - Action:
+              - s3:PutObject
+              - s3:GetObject
+              - s3:GetObjectVersion
+              Resource: "*"
+              Effect: Allow
+            - Action:
+              - ssm:GetParameters
+              Resource: arn:aws:ssm:us-east-1:245271560881:parameter/CodeBuild/*
+              Effect: Allow
+
+  StreamerContractsCodeBuild:
+    Type: AWS::CodeBuild::Project
+    DependsOn: CodeBuildServiceRole
+    Properties:
+      Artifacts:
+        Type: CODEPIPELINE
+      Description: StreamerContracts CodeBuild
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/java:openjdk-8
+        Type: LINUX_CONTAINER
+      Name: !Ref StreamerContractsCodeBuildProject
+      ServiceRole: !Sub arn:aws:iam::245271560881:role/${CodeBuildServiceRole}
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: infrastructure/build_spec.yml
+      TimeoutInMinutes: 10
+
+  CodeDeployServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+            Effect: Allow
+            Principal:
+              Service: codedeploy.amazonaws.com
+            Action: sts:AssumeRole
+      RoleName: !Ref CodeDeployServiceRoleName
+      Policies:
+        - PolicyName: !Ref CodeDeployServiceRoleName
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+            - Action:
+              - autoscaling:CompleteLifecycleAction
+              - autoscaling:DeleteLifecycleHook
+              - autoscaling:DescribeAutoScalingGroups
+              - autoscaling:DescribeLifecycleHooks
+              - autoscaling:PutLifecycleHook
+              - autoscaling:RecordLifecycleActionHeartbeat
+              - autoscaling:CreateAutoScalingGroup
+              - autoscaling:UpdateAutoScalingGroup
+              - autoscaling:EnableMetricsCollection
+              - autoscaling:DescribeAutoScalingGroups
+              - autoscaling:DescribePolicies
+              - autoscaling:DescribeScheduledActions
+              - autoscaling:DescribeNotificationConfigurations
+              - autoscaling:DescribeLifecycleHooks
+              - autoscaling:SuspendProcesses
+              - autoscaling:ResumeProcesses
+              - autoscaling:AttachLoadBalancers
+              - autoscaling:PutScalingPolicy
+              - autoscaling:PutScheduledUpdateGroupAction
+              - autoscaling:PutNotificationConfiguration
+              - autoscaling:PutLifecycleHook
+              - autoscaling:DescribeScalingActivities
+              - autoscaling:DeleteAutoScalingGroup
+              - ec2:DescribeInstances
+              - ec2:DescribeInstanceStatus
+              - ec2:TerminateInstances
+              - tag:GetTags
+              - tag:GetResources
+              - sns:Publish
+              - cloudwatch:DescribeAlarms
+              - cloudwatch:PutMetricAlarm
+              - elasticloadbalancing:DescribeLoadBalancers
+              - elasticloadbalancing:DescribeInstanceHealth
+              - elasticloadbalancing:RegisterInstancesWithLoadBalancer
+              - elasticloadbalancing:DeregisterInstancesFromLoadBalancer
+              - elasticloadbalancing:DescribeTargetGroups
+              - elasticloadbalancing:DescribeTargetHealth
+              - elasticloadbalancing:RegisterTargets
+              - elasticloadbalancing:DeregisterTargets
+              Resource: "*"
+              Effect: Allow
+
+  StreamerContractsCodeDeployApplication:
+    Type: AWS::CodeDeploy::Application
+    Properties:
+      ApplicationName: !Ref StreamerContractsCodeDeployApplicationName
+      ComputePlatform: Server
+
+  StreamerContractsCodeDeployDeploymentGroup:
+    Type: AWS::CodeDeploy::DeploymentGroup
+    DependsOn:
+      - StreamerContractsCodeDeployApplication
+      - CodeDeployServiceRole
+    Properties:
+      ApplicationName: !Ref StreamerContractsCodeDeployApplicationName
+      DeploymentConfigName: CodeDeployDefault.AllAtOnce
+      DeploymentGroupName: !Ref StreamerContractsCodeDeployDeploymentGroupName
+      DeploymentStyle:
+        DeploymentOption: WITHOUT_TRAFFIC_CONTROL
+        DeploymentType: IN_PLACE
+      Ec2TagFilters:
+        - Type: VALUE_ONLY
+          Value: !Ref StreamerContractsEc2InstanceTags
+      ServiceRoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/${CodeDeployServiceRoleName}
+
+  ArtifactStoreS3Location:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: Private
+      BucketName: !Ref CodePipelineArtifactsBucket
+      LifecycleConfiguration:
+        Rules:
+          - ExpirationInDays: 1
+            Status: Enabled
+      VersioningConfiguration:
+        Status: Enabled
+
   CodePipelineServiceRole:
     Type: AWS::IAM::Role
     Properties:
@@ -91,70 +243,6 @@ Resources:
               - iam:PassRole
               Resource: "*"
               Effect: Allow
-
-  CodeBuildServiceRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-            Effect: Allow
-            Principal:
-              Service: codebuild.amazonaws.com
-            Action: sts:AssumeRole
-      RoleName: !Ref CodeBuildServiceRoleName
-      Policies:
-        - PolicyName: !Ref CodeBuildServiceRoleName
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-            - Action:
-              - logs:CreateLogGroup
-              - logs:CreateLogStream
-              - logs:PutLogEvents
-              Resource:
-                - !Sub arn:aws:logs:us-east-1:245271560881:log-group:/aws/codebuild/${StreamerContractsCodeBuildProject}
-                - !Sub arn:aws:logs:us-east-1:245271560881:log-group:/aws/codebuild/${StreamerContractsCodeBuildProject}:*
-              Effect: Allow
-            - Action:
-              - s3:PutObject
-              - s3:GetObject
-              - s3:GetObjectVersion
-              Resource: "*"
-              Effect: Allow
-            - Action:
-              - ssm:GetParameters
-              Resource: arn:aws:ssm:us-east-1:245271560881:parameter/CodeBuild/*
-              Effect: Allow
-
-  ArtifactStoreS3Location:
-    Type: AWS::S3::Bucket
-    Properties:
-      AccessControl: Private
-      BucketName: !Ref CodePipelineArtifactsBucket
-      LifecycleConfiguration:
-        Rules:
-          - ExpirationInDays: 1
-            Status: Enabled
-      VersioningConfiguration:
-        Status: Enabled
-
-  StreamerContractsCodeBuild:
-    Type: AWS::CodeBuild::Project
-    DependsOn: CodeBuildServiceRole
-    Properties:
-      Artifacts:
-        Type: CODEPIPELINE
-      Description: StreamerContracts CodeBuild
-      Environment:
-        ComputeType: BUILD_GENERAL1_SMALL
-        Image: aws/codebuild/java:openjdk-8
-        Type: LINUX_CONTAINER
-      Name: StreamerContractsBuild-cf
-      ServiceRole: arn:aws:iam::245271560881:role/CodeBuildServiceRole
-      Source:
-        Type: CODEPIPELINE
-        BuildSpec: infrastructure/build_spec.yml
-      TimeoutInMinutes: 10
 
   StreamerContractsCodePipeline:
     Type: AWS::CodePipeline::Pipeline

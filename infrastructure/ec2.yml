@@ -1,0 +1,138 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Ec2 Instances for StreamerContracts App
+Parameters:
+  Ec2InstanceProfileName:
+    Type: String
+    Description: Name for Ec2InstanceProfile
+    Default: StreamerContractsEc2InstanceRole
+  KeyPairName:
+    Type: String
+    Description: Used to ssh securly onto Ec2 Instance
+    Default: streamer-contracts
+  StreamerContractsEc2InstanceTags:
+    Type: String
+    Description: The EC2 tags that are already applied to EC2 instances that you want to include in the deployment group.
+    Default: StreamerContracts-cf
+
+Resources:
+  StreamerContractsVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      InstanceTenancy: default
+
+  StreamerContractsSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: StreamerContractsSecurityGroup
+      GroupDescription: SecurityGroup for EC2 Hosts
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          Description: Allow all outbound communication from any port to any port
+          FromPort: -1
+          IpProtocol: -1
+          ToPort: -1
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          Description: Allow all inbound communication from any port to any port
+          FromPort: -1
+          IpProtocol: -1
+          ToPort: -1
+      VpcId: !Ref StreamerContractsVPC
+
+  StreamerContractsSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      MapPublicIpOnLaunch: true
+      VpcId: !Ref StreamerContractsVPC
+
+  StreamerContractsInternetGateway:
+    Type: AWS::EC2::InternetGateway
+
+  StreamerContractsVpcGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref StreamerContractsInternetGateway
+      VpcId: !Ref StreamerContractsVPC
+
+  StreamerContractsRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref StreamerContractsVPC
+
+  StreamerContractsRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref StreamerContractsInternetGateway
+      RouteTableId: !Ref StreamerContractsRouteTable
+
+  StreamerContractsSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref StreamerContractsRouteTable
+      SubnetId: !Ref StreamerContractsSubnet
+
+  Ec2InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+            Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      RoleName: !Sub ${Ec2InstanceProfileName}-role
+      Policies:
+        - PolicyName: !Sub ${Ec2InstanceProfileName}-role
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+            - Action:
+              - s3:Get*
+              - s3:List*
+              Resource:
+                - arn:aws:s3:::aws-codedeploy-us-east-1/*
+                - "*"
+              Effect: Allow
+
+  Ec2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    DependsOn: Ec2InstanceRole
+    Properties:
+      Roles:
+        - !Sub ${Ec2InstanceProfileName}-role
+      InstanceProfileName: !Ref Ec2InstanceProfileName
+
+  StreamerContractsEc2Instance:
+    Type: AWS::EC2::Instance
+    DependsOn:
+      - Ec2InstanceProfile
+    Properties:
+      IamInstanceProfile: !Ref Ec2InstanceProfileName
+      ImageId: ami-467ca739
+      InstanceType: t2.micro
+      KeyName: !Ref KeyPairName
+      SecurityGroupIds:
+        - !Ref StreamerContractsSecurityGroup
+      SourceDestCheck: True
+      SubnetId: !Ref StreamerContractsSubnet
+      Tags:
+        - Key: Name
+          Value: !Ref StreamerContractsEc2InstanceTags
+      Tenancy: default
+      # Logs created while running these commands are saved at /var/log/cloud-init-output.log
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          yum -y update
+          yum install -y ruby
+          cd /home/ec2-user
+          curl -O https://aws-codedeploy-us-east-1.s3.amazonaws.com/latest/install
+          chmod +x ./install
+          ./install auto
+          sudo yum -y remove java-1.7.0-openjdk
+          sudo yum -y install java-1.8.0
