@@ -21,3 +21,4 @@ artifacts:
     - build/libs/springhelloworld-1.0-SNAPSHOT.jar
     - infrastructure/appspec.yml
     - infrastructure/start.sh
+  discard-paths: yes
