@@ -1,10 +1,6 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Ec2 Instances for StreamerContracts App
+Description: VPC and Ec2 Instances for StreamerContracts App
 Parameters:
-  Ec2InstanceProfileName:
-    Type: String
-    Description: Name for Ec2InstanceProfile
-    Default: StreamerContractsEc2InstanceRole
   KeyPairName:
     Type: String
     Description: Used to ssh securly onto Ec2 Instance
@@ -12,7 +8,7 @@ Parameters:
   StreamerContractsEc2InstanceTags:
     Type: String
     Description: The EC2 tags that are already applied to EC2 instances that you want to include in the deployment group.
-    Default: StreamerContracts-cf
+    Default: StreamerContracts
 
 Resources:
   StreamerContractsVPC:
@@ -85,9 +81,9 @@ Resources:
             Principal:
               Service: ec2.amazonaws.com
             Action: sts:AssumeRole
-      RoleName: !Sub ${Ec2InstanceProfileName}-role
+      RoleName: StreamerContractsEc2InstanceProfileRole
       Policies:
-        - PolicyName: !Sub ${Ec2InstanceProfileName}-role
+        - PolicyName: StreamerContractsEc2InstanceProfileRole
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -101,18 +97,15 @@ Resources:
 
   Ec2InstanceProfile:
     Type: AWS::IAM::InstanceProfile
-    DependsOn: Ec2InstanceRole
     Properties:
       Roles:
-        - !Sub ${Ec2InstanceProfileName}-role
-      InstanceProfileName: !Ref Ec2InstanceProfileName
+        - !Ref Ec2InstanceRole
+      InstanceProfileName: StreamerContractsEc2InstanceProfile
 
   StreamerContractsEc2Instance:
     Type: AWS::EC2::Instance
-    DependsOn:
-      - Ec2InstanceProfile
     Properties:
-      IamInstanceProfile: !Ref Ec2InstanceProfileName
+      IamInstanceProfile: !Ref Ec2InstanceProfile
       ImageId: ami-467ca739
       InstanceType: t2.micro
       KeyName: !Ref KeyPairName
@@ -124,7 +117,7 @@ Resources:
         - Key: Name
           Value: !Ref StreamerContractsEc2InstanceTags
       Tenancy: default
-      # Logs created while running these commands are saved at /var/log/cloud-init-output.log
+      # Logs created while running these commands are saved at /var/log/cloud-init-output.log on ec2 hosts
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash

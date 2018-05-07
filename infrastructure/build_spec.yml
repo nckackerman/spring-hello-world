@@ -19,5 +19,5 @@ phases:
 artifacts:
   files:
     - build/libs/springhelloworld-1.0-SNAPSHOT.jar
-    - appspec.yml
-    - start.sh
+    - infrastructure/appspec.yml
+    - infrastructure/start.sh
