@@ -5,17 +5,13 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
-import java.util.HashMap;
-import java.util.Map;
-
 @Controller
 @RequestMapping("/")
 public class HelloController {
 
-
     @RequestMapping(method = RequestMethod.GET)
     public String hello(Model model) {
-        model.addAttribute("message", "Message passed from api to template. If this text is green, css is working");
+        model.addAttribute("message", "Hello from streamerContracts-backend! If this text is green, both css and thymeleaf are working.");
         return "hello";
     }
 }
