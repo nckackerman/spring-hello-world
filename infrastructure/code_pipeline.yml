@@ -274,6 +274,7 @@ Resources:
               Configuration:
                 ProjectName: !Ref StreamerContractsCodeBuild
               OutputArtifacts:
+                - Name: BuildOutput-Web
             - Name: BuildAction-Api
               RunOrder: 2
               InputArtifacts:
