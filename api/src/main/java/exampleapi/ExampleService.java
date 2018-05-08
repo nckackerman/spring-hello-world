@@ -1,4 +1,5 @@
 package exampleapi;
 
-public class ExampleService {
+public interface ExampleService {
+    String exampleService();
 }
