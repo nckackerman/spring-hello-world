@@ -18,7 +18,8 @@ phases:
       - echo Build completed on `date`
 artifacts:
   files:
-    - build/libs/springhelloworld-1.0-SNAPSHOT.jar
+    - web/build/libs/web-1.0-SNAPSHOT.jar
+    - api/build/libs/api-1.0-SNAPSHOT.jar
     - infrastructure/appspec.yml
     - infrastructure/start.sh
   discard-paths: yes
