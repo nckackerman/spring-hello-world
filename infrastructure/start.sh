@@ -11,10 +11,10 @@ then
     java -jar /var/www/streamercontracts/web/build/libs/web-1.0-SNAPSHOT.jar > /dev/null 2>&1 &
     exit $?
 elif [[ ${DEPLOYMENT_GROUP_NAME} =~ "Api" ]]
+then
     echo "Starting StreamerContracts-Api SpringBoot Application"
     java -jar /var/www/streamercontracts/api/build/libs/api-1.0-SNAPSHOT.jar > /dev/null 2>&1 &
     exit $?
-then
 else
     echo "Invalid deployment group name '${DEPLOYMENT_GROUP_NAME}', no role found " 2>&1 &
     exit 1

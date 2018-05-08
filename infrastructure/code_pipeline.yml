@@ -136,11 +136,11 @@ Resources:
       ApplicationName: StreamerContractsCodeDeploy-Web
       ComputePlatform: Server
 
-    StreamerContractsCodeDeployApiApplication:
-      Type: AWS::CodeDeploy::Application
-      Properties:
-        ApplicationName: StreamerContractsCodeDeploy-Api
-        ComputePlatform: Server
+  StreamerContractsCodeDeployApiApplication:
+    Type: AWS::CodeDeploy::Application
+    Properties:
+      ApplicationName: StreamerContractsCodeDeploy-Api
+      ComputePlatform: Server
 
   StreamerContractsCodeDeployWebDeploymentGroup:
     Type: AWS::CodeDeploy::DeploymentGroup
@@ -156,19 +156,19 @@ Resources:
           Value: !Sub ${StreamerContractsEc2InstanceTags}-Web
       ServiceRoleArn: !GetAtt CodeDeployServiceRole.Arn
 
-    StreamerContractsCodeDeployApiDeploymentGroup:
-      Type: AWS::CodeDeploy::DeploymentGroup
-      Properties:
-        ApplicationName: !Ref StreamerContractsCodeDeployApiApplication
-        DeploymentConfigName: CodeDeployDefault.AllAtOnce
-        DeploymentGroupName: StreamerContractsFleet-Api
-        DeploymentStyle:
-          DeploymentOption: WITHOUT_TRAFFIC_CONTROL
-          DeploymentType: IN_PLACE
-        Ec2TagFilters:
-          - Type: VALUE_ONLY
-            Value: !Sub ${StreamerContractsEc2InstanceTags}-Api
-        ServiceRoleArn: !GetAtt CodeDeployServiceRole.Arn
+  StreamerContractsCodeDeployApiDeploymentGroup:
+    Type: AWS::CodeDeploy::DeploymentGroup
+    Properties:
+      ApplicationName: !Ref StreamerContractsCodeDeployApiApplication
+      DeploymentConfigName: CodeDeployDefault.AllAtOnce
+      DeploymentGroupName: StreamerContractsFleet-Api
+      DeploymentStyle:
+        DeploymentOption: WITHOUT_TRAFFIC_CONTROL
+        DeploymentType: IN_PLACE
+      Ec2TagFilters:
+        - Type: VALUE_ONLY
+          Value: !Sub ${StreamerContractsEc2InstanceTags}-Api
+      ServiceRoleArn: !GetAtt CodeDeployServiceRole.Arn
 
   ArtifactStoreS3Location:
     Type: AWS::S3::Bucket
@@ -260,7 +260,7 @@ Resources:
                 OAuthToken: !Ref GitHubRepoOAuthToken
               OutputArtifacts:
                 - Name: SourceOutput
-        - Name: Build-Web
+        - Name: Build
           Actions:
             - Name: BuildAction-Web
               RunOrder: 2
@@ -274,37 +274,6 @@ Resources:
               Configuration:
                 ProjectName: !Ref StreamerContractsCodeBuild
               OutputArtifacts:
-                - Name: BuildOutput-Web
-        - Name: Beta-Web
-          Actions:
-            - Name: BetaDeployAction-Web
-              RunOrder: 3
-              InputArtifacts:
-                - Name: BuildOutput-Web
-              ActionTypeId:
-                Category: Deploy
-                Provider: CodeDeploy
-                Owner: AWS
-                Version: 1
-              Configuration:
-                ApplicationName: !Ref StreamerContractsCodeDeployWebApplication
-                DeploymentGroupName: !Ref StreamerContractsCodeDeployWebDeploymentGroup
-        - Name: Prod-Web
-          Actions:
-            - Name: ProdDeployAction-Web
-              RunOrder: 4
-              InputArtifacts:
-                - Name: BuildOutput-Web
-              ActionTypeId:
-                Category: Deploy
-                Provider: CodeDeploy
-                Owner: AWS
-                Version: 1
-              Configuration:
-                ApplicationName: !Ref StreamerContractsCodeDeployWebApplication
-                DeploymentGroupName: !Ref StreamerContractsCodeDeployWebDeploymentGroup
-        - Name: Build-Api
-          Actions:
             - Name: BuildAction-Api
               RunOrder: 2
               InputArtifacts:
@@ -318,8 +287,20 @@ Resources:
                 ProjectName: !Ref StreamerContractsCodeBuild
               OutputArtifacts:
                 - Name: BuildOutput-Api
-        - Name: Beta-Api
+        - Name: Beta
           Actions:
+            - Name: BetaDeployAction-Web
+              RunOrder: 3
+              InputArtifacts:
+                - Name: BuildOutput-Web
+              ActionTypeId:
+                Category: Deploy
+                Provider: CodeDeploy
+                Owner: AWS
+                Version: 1
+              Configuration:
+                ApplicationName: !Ref StreamerContractsCodeDeployWebApplication
+                DeploymentGroupName: !Ref StreamerContractsCodeDeployWebDeploymentGroup
             - Name: BetaDeployAction-Api
               RunOrder: 3
               InputArtifacts:
@@ -332,8 +313,20 @@ Resources:
               Configuration:
                 ApplicationName: !Ref StreamerContractsCodeDeployApiApplication
                 DeploymentGroupName: !Ref StreamerContractsCodeDeployApiDeploymentGroup
-        - Name: Prod-Api
+        - Name: Prod
           Actions:
+            - Name: ProdDeployAction-Web
+              RunOrder: 4
+              InputArtifacts:
+                - Name: BuildOutput-Web
+              ActionTypeId:
+                Category: Deploy
+                Provider: CodeDeploy
+                Owner: AWS
+                Version: 1
+              Configuration:
+                ApplicationName: !Ref StreamerContractsCodeDeployWebApplication
+                DeploymentGroupName: !Ref StreamerContractsCodeDeployWebDeploymentGroup
             - Name: ProdDeployAction-Api
               RunOrder: 4
               InputArtifacts:
