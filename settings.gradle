@@ -1,2 +1,4 @@
 rootProject.name = 'springhelloworld'
+include 'web'
+include 'api'
 

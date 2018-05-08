@@ -102,7 +102,7 @@ Resources:
         - !Ref Ec2InstanceRole
       InstanceProfileName: StreamerContractsEc2InstanceProfile
 
-  StreamerContractsEc2Instance:
+  StreamerContractsWebEc2Instance:
     Type: AWS::EC2::Instance
     Properties:
       IamInstanceProfile: !Ref Ec2InstanceProfile
@@ -115,7 +115,35 @@ Resources:
       SubnetId: !Ref StreamerContractsSubnet
       Tags:
         - Key: Name
-          Value: !Ref StreamerContractsEc2InstanceTags
+          Value: !Sub ${StreamerContractsEc2InstanceTags}-Web
+      Tenancy: default
+      # Logs created while running these commands are saved at /var/log/cloud-init-output.log on ec2 hosts
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          yum -y update
+          yum install -y ruby
+          cd /home/ec2-user
+          curl -O https://aws-codedeploy-us-east-1.s3.amazonaws.com/latest/install
+          chmod +x ./install
+          ./install auto
+          sudo yum -y remove java-1.7.0-openjdk
+          sudo yum -y install java-1.8.0
+
+  StreamerContractsApiEc2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      IamInstanceProfile: !Ref Ec2InstanceProfile
+      ImageId: ami-467ca739
+      InstanceType: t2.micro
+      KeyName: !Ref KeyPairName
+      SecurityGroupIds:
+        - !Ref StreamerContractsSecurityGroup
+      SourceDestCheck: True
+      SubnetId: !Ref StreamerContractsSubnet
+      Tags:
+        - Key: Name
+          Value: !Sub ${StreamerContractsEc2InstanceTags}-Api
       Tenancy: default
       # Logs created while running these commands are saved at /var/log/cloud-init-output.log on ec2 hosts
       UserData:

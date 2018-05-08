@@ -1,6 +1,3 @@
-group 'com.nicknathanjustin.springhelloworld'
-version '1.0-SNAPSHOT'
-
 buildscript {
     repositories {
         mavenCentral()
@@ -10,21 +7,20 @@ buildscript {
     }
 }
 
-apply plugin: 'java'
-apply plugin: 'eclipse'
-apply plugin: 'idea'
-apply plugin: 'org.springframework.boot'
-apply plugin: 'io.spring.dependency-management'
+subprojects {
+    group 'com.nicknathanjustin.springhelloworld'
+    version '1.0-SNAPSHOT'
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+    apply plugin: 'java'
+    apply plugin: 'eclipse'
+    apply plugin: 'idea'
+    apply plugin: 'org.springframework.boot'
+    apply plugin: 'io.spring.dependency-management'
 
-repositories {
-    mavenCentral()
-}
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
 
-dependencies {
-    compile("org.springframework.boot:spring-boot-starter-web")
-    compile("org.springframework.boot:spring-boot-starter-thymeleaf")
-    testCompile("junit:junit")
+    repositories {
+        mavenCentral()
+    }
 }
