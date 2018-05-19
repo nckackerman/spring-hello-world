@@ -192,3 +192,4 @@ Resources:
           echo export WEB_HOST=${StreamerContractsWebEc2Instance.PublicDnsName} >> /etc/profile
           echo export API_PORT=8070 >> /etc/profile
           echo export API_HOST=${StreamerContractsApiEc2Instance.PublicDnsName} >> /etc/profile
+      # saving host and port like this is a hack that will go away once we have a registered domain name
