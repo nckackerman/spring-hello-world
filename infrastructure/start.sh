@@ -7,17 +7,19 @@ if [[ ${DEPLOYMENT_GROUP_NAME} =~ "WebServer" ]]
 then
     echo "Stopping nginx"
     service nginx stop
-    echo "Starting nginx StreamerContracts-WebServer"
-    # This is hack to make nginx work with environment variables. This will go away when we have registered domain names.
-    # Currently points traffic directly to ec2 instances. We'll likely want this to point to autoscaling groups in the future
-    # make sure $WEB_HOST, $WEB_PORT, $API_HOST, and $API_PORT get set while spinning up StreamerContracts-WebServer instances
-    sudo source /etc/profile
-    sudo cp /var/www/streamercontracts/nginx.conf /etc/nginx/nginx.conf
-    sudo sed -i "s|REPLACE_WITH_WEB_HOST|$WEB_HOST|g" /etc/nginx/nginx.conf
-    sudo sed -i "s|REPLACE_WITH_WEB_PORT|$WEB_PORT|g" /etc/nginx/nginx.conf
-    sudo sed -i "s|REPLACE_WITH_API_HOST|$API_HOST|g" /etc/nginx/nginx.conf
-    sudo sed -i "s|REPLACE_WITH_API_PORT|$API_PORT|g" /etc/nginx/nginx.conf
-    service nginx start &
+    echo "Starting nginx StreamerContracts-WebServer. Service wont work until you ssh onto this instance and update nginx.conf."
+    # nginx doesnt know where to route web and api traffic and currently has placeholders
+    # - REPLACE_WITH_WEB_HOST, REPLACE_WITH_WEB_PORT, REPLACE_WITH_API_HOST, REPLACE_WITH_API_PORT
+    # CodeDeploy does not have access to ENVIRONMENT_VARIABLES. As such, until we have a dedicated hostname, the best
+    # approach we have for configuring nginx is to ssh onto the WebServer ec2 instance and run the following commands manually:
+
+    # sudo cp /var/www/streamercontracts/nginx.conf /etc/nginx/nginx.conf
+    # sudo sed -i "s|REPLACE_WITH_WEB_HOST|$WEB_HOST|g" /etc/nginx/nginx.conf
+    # sudo sed -i "s|REPLACE_WITH_WEB_PORT|$WEB_PORT|g" /etc/nginx/nginx.conf
+    # sudo sed -i "s|REPLACE_WITH_API_HOST|$API_HOST|g" /etc/nginx/nginx.conf
+    # sudo sed -i "s|REPLACE_WITH_API_PORT|$API_PORT|g" /etc/nginx/nginx.conf
+    # service nginx start &
+
     exit $?
 elif [[ ${DEPLOYMENT_GROUP_NAME} =~ "Web" ]]
 then
