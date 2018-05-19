@@ -2,3 +2,5 @@
 .idea/
 build/
 gradlew.bat
+api/out/
+web/out/

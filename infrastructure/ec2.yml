@@ -157,3 +157,39 @@ Resources:
           ./install auto
           sudo yum -y remove java-1.7.0-openjdk
           sudo yum -y install java-1.8.0
+
+  StreamerContractsWebServerEc2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      IamInstanceProfile: !Ref Ec2InstanceProfile
+      ImageId: ami-467ca739
+      InstanceType: t2.micro
+      KeyName: !Ref KeyPairName
+      SecurityGroupIds:
+        - !Ref StreamerContractsSecurityGroup
+      SourceDestCheck: True
+      SubnetId: !Ref StreamerContractsSubnet
+      Tags:
+        - Key: Name
+          Value: !Sub ${StreamerContractsEc2InstanceTags}-WebServer
+      Tenancy: default
+      # Logs created while running these commands are saved at /var/log/cloud-init-output.log on ec2 hosts
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          yum -y update
+          yum install -y ruby
+          cd /home/ec2-user
+          curl -O https://aws-codedeploy-us-east-1.s3.amazonaws.com/latest/install
+          chmod +x ./install
+          ./install auto
+          sudo yum -y remove java-1.7.0-openjdk
+          sudo yum -y remove java-1.7.0-openjdk
+          sudo yum -y install java-1.8.0
+          sudo wget http://nginx.org/keys/nginx_signing.key
+          sudo yum -y install nginx
+          # ports need to match whats in application.properties.
+          export WEB_HOST=!GetAtt StreamerContractsWebEc2Instance.publicDnsName
+          export WEB_PORT=8060
+          export API_HOST=!GetAtt StreamerContractsApiEc2Instance.publicDnsName
+          export API_PORT=8070

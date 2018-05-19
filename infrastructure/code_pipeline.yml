@@ -130,6 +130,12 @@ Resources:
               Resource: "*"
               Effect: Allow
 
+  StreamerContractsCodeDeployWebServerApplication:
+    Type: AWS::CodeDeploy::Application
+    Properties:
+      ApplicationName: StreamerContractsCodeDeploy-WebServer
+      ComputePlatform: Server
+
   StreamerContractsCodeDeployWebApplication:
     Type: AWS::CodeDeploy::Application
     Properties:
@@ -141,6 +147,20 @@ Resources:
     Properties:
       ApplicationName: StreamerContractsCodeDeploy-Api
       ComputePlatform: Server
+
+  StreamerContractsCodeDeployWebServerDeploymentGroup:
+    Type: AWS::CodeDeploy::DeploymentGroup
+    Properties:
+      ApplicationName: !Ref StreamerContractsCodeDeployWebServerApplication
+      DeploymentConfigName: CodeDeployDefault.AllAtOnce
+      DeploymentGroupName: StreamerContractsFleet-WebServer
+      DeploymentStyle:
+        DeploymentOption: WITHOUT_TRAFFIC_CONTROL
+        DeploymentType: IN_PLACE
+      Ec2TagFilters:
+        - Type: VALUE_ONLY
+          Value: !Sub ${StreamerContractsEc2InstanceTags}-WebServer
+      ServiceRoleArn: !GetAtt CodeDeployServiceRole.Arn
 
   StreamerContractsCodeDeployWebDeploymentGroup:
     Type: AWS::CodeDeploy::DeploymentGroup
@@ -262,6 +282,19 @@ Resources:
                 - Name: SourceOutput
         - Name: Build
           Actions:
+            - Name: BuildAction-WebServer
+              RunOrder: 2
+              InputArtifacts:
+                - Name: SourceOutput
+              ActionTypeId:
+                Category: Build
+                Provider: CodeBuild
+                Owner: AWS
+                Version: 1
+              Configuration:
+                ProjectName: !Ref StreamerContractsCodeBuild
+              OutputArtifacts:
+                - Name: BuildOutput-WebServer
             - Name: BuildAction-Web
               RunOrder: 2
               InputArtifacts:
@@ -290,6 +323,18 @@ Resources:
                 - Name: BuildOutput-Api
         - Name: Beta
           Actions:
+            - Name: BetaDeployAction-WebServer
+              RunOrder: 3
+              InputArtifacts:
+                - Name: BuildOutput-WebServer
+              ActionTypeId:
+                Category: Deploy
+                Provider: CodeDeploy
+                Owner: AWS
+                Version: 1
+              Configuration:
+                ApplicationName: !Ref StreamerContractsCodeDeployWebServerApplication
+                DeploymentGroupName: !Ref StreamerContractsCodeDeployWebServerDeploymentGroup
             - Name: BetaDeployAction-Web
               RunOrder: 3
               InputArtifacts:
@@ -316,6 +361,18 @@ Resources:
                 DeploymentGroupName: !Ref StreamerContractsCodeDeployApiDeploymentGroup
         - Name: Prod
           Actions:
+            - Name: ProdDeployAction-WebServer
+              RunOrder: 4
+              InputArtifacts:
+                - Name: BuildOutput-WebServer
+              ActionTypeId:
+                Category: Deploy
+                Provider: CodeDeploy
+                Owner: AWS
+                Version: 1
+              Configuration:
+                ApplicationName: !Ref StreamerContractsCodeDeployWebServerApplication
+                DeploymentGroupName: !Ref StreamerContractsCodeDeployWebServerDeploymentGroup
             - Name: ProdDeployAction-Web
               RunOrder: 4
               InputArtifacts:

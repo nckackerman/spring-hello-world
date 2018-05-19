@@ -20,6 +20,7 @@ artifacts:
   files:
     - web/build/libs/web-1.0-SNAPSHOT.jar
     - api/build/libs/api-1.0-SNAPSHOT.jar
+    - infrastructure/nginx/nginx.conf
     - infrastructure/appspec.yml
     - infrastructure/start.sh
   discard-paths: yes
