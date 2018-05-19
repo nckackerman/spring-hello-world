@@ -188,8 +188,7 @@ Resources:
           sudo yum -y install java-1.8.0
           sudo wget http://nginx.org/keys/nginx_signing.key
           sudo yum -y install nginx
-          # ports need to match whats in application.properties.
-          export WEB_HOST=!GetAtt StreamerContractsWebEc2Instance.publicDnsName
-          export WEB_PORT=8060
-          export API_HOST=!GetAtt StreamerContractsApiEc2Instance.publicDnsName
-          export API_PORT=8070
+          echo export WEB_PORT=8060 >> /etc/profile
+          echo export WEB_HOST=${StreamerContractsWebEc2Instance.PublicDnsName} >> /etc/profile
+          echo export API_PORT=8070 >> /etc/profile
+          echo export API_HOST=${StreamerContractsApiEc2Instance.PublicDnsName} >> /etc/profile

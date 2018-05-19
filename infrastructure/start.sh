@@ -5,6 +5,8 @@ killall -9 java
 
 if [[ ${DEPLOYMENT_GROUP_NAME} =~ "WebServer" ]]
 then
+    echo "Stopping nginx"
+    service nginx stop
     echo "Starting nginx StreamerContracts-WebServer"
     # This is hack to make nginx work with environment variables.
     # Currently points traffic directly to ec2 instances. We'll likely want this to point to autoscaling groups in the future
@@ -14,7 +16,7 @@ then
     sudo sed -i "s|REPLACE_WITH_WEB_PORT|$WEB_PORT|g" /etc/nginx/nginx.conf
     sudo sed -i "s|REPLACE_WITH_API_HOST|$API_HOST|g" /etc/nginx/nginx.conf
     sudo sed -i "s|REPLACE_WITH_API_PORT|$API_PORT|g" /etc/nginx/nginx.conf
-    sudo nginx &
+    service nginx start &
     exit $?
 elif [[ ${DEPLOYMENT_GROUP_NAME} =~ "Web" ]]
 then
