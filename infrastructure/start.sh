@@ -18,7 +18,7 @@ then
     # sudo sed -i "s|REPLACE_WITH_WEB_PORT|$WEB_PORT|g" /etc/nginx/nginx.conf
     # sudo sed -i "s|REPLACE_WITH_API_HOST|$API_HOST|g" /etc/nginx/nginx.conf
     # sudo sed -i "s|REPLACE_WITH_API_PORT|$API_PORT|g" /etc/nginx/nginx.conf
-    # service nginx start &
+    # sudo service nginx start &
 
     exit $?
 elif [[ ${DEPLOYMENT_GROUP_NAME} =~ "Web" ]]
