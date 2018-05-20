@@ -5,8 +5,9 @@ killall -9 java
 
 if [[ ${DEPLOYMENT_GROUP_NAME} =~ "WebServer" ]]
 then
-    echo "Stopping nginx"
-    service nginx stop
+    # Uncomment once we get our own domain name and can fix nginx routing to not depend on ec2 instance ips
+    # echo "Stopping nginx"
+    # service nginx stop
     echo "Starting nginx StreamerContracts-WebServer. Service wont work until you ssh onto this instance and update nginx.conf."
     # nginx doesnt know where to route web and api traffic and currently has placeholders
     # - REPLACE_WITH_WEB_HOST, REPLACE_WITH_WEB_PORT, REPLACE_WITH_API_HOST, REPLACE_WITH_API_PORT
