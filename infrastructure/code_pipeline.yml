@@ -52,7 +52,7 @@ Resources:
               Effect: Allow
             - Action:
               - ssm:GetParameters
-              Resource: arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/CodeBuild/*
+              Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/CodeBuild/*
               Effect: Allow
 
   StreamerContractsCodeBuild:
