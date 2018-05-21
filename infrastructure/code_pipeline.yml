@@ -42,7 +42,7 @@ Resources:
               - logs:CreateLogStream
               - logs:PutLogEvents
               Resource:
-                - !Sub arn:aws:logs:us-east-1:245271560881:log-group:/aws/codebuild/*
+                - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*
               Effect: Allow
             - Action:
               - s3:PutObject
@@ -52,7 +52,7 @@ Resources:
               Effect: Allow
             - Action:
               - ssm:GetParameters
-              Resource: arn:aws:ssm:us-east-1:245271560881:parameter/CodeBuild/*
+              Resource: arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/CodeBuild/*
               Effect: Allow
 
   StreamerContractsCodeBuild:
